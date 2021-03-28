@@ -2,14 +2,27 @@
 #include <string>
 using namespace std;
 
+struct user
+{
+    int id;
+    string name;
+    string email;
+    bool is_active = 1;
+    void print()
+    {
+        cout << id << " " << name << " " << email << " " << is_active << endl;
+    }
+};
 struct book
 {
     int id;
     string name;
-    int quantity;
+    int quantity, users_count;
+    user users[100];
+
     book()
     {
-        id = 0, name = "", quantity = 0;
+        id = 0, name = "", quantity = 0, users_count = 0;
     }
     void print()
     {
@@ -28,7 +41,7 @@ struct book
             is_substring = true;
             for (int j = 0; j < (int)search_string.size(); j++)
             {
-                if (name[i] != search_string[j])
+                if (name[i + j] != search_string[j])
                 {
                     is_substring = false;
                     break;
@@ -57,13 +70,6 @@ struct book
         return does_it_start;
     }
 };
-struct user
-{
-    int id;
-    string name;
-    string email;
-    book books[10];
-};
 struct library_system
 {
     book books[100];
@@ -86,7 +92,7 @@ struct library_system
         {
             if (users[i].name == u.name)
             {
-                cout << "User with already exists\nThe User Id of the user is " << u.id << endl;
+                cout << "User already exists\nThe User Id of the user is " << u.id << endl;
                 return;
             }
         }
@@ -116,28 +122,19 @@ struct library_system
     }
     void print_books()
     {
+        cout << "Books List:\n";
         for (int i = 0; i < books_count; i++)
         {
             books[i].print();
         }
     }
-    int menu()
+    void print_users()
     {
-        int choice;
-        cout << "\n\n**********************************\n"
-             << "Welcome to the Library Admin tool!!!\nPlease enter your choice:\n"
-             << "1. Add a book" << endl
-             << "2. Search a book by its prefix" << endl
-             << "3. Search a book by its substring" << endl
-             << "4. Print all the books" << endl
-             << "5. Add a User" << endl
-             << "6. Give book to the User" << endl
-             << "7. Collect book from the User" << endl
-             << "8. Print all the Users" << endl
-             << "9. Find users who borrowed a book" << endl
-             << "10. Exit the system" << endl;
-        cin >> choice;
-        return choice;
+        cout << "Users List:\n";
+        for (int i = 0; i < users_count; i++)
+        {
+            users[i].print();
+        }
     }
     void search_books(bool isPrefix = false)
     {
@@ -180,6 +177,104 @@ struct library_system
         if (!match_count)
             cout << "No books found!\n";
     }
+    void give_book_to_user()
+    {
+        string book_name, user_name;
+        bool user_exists = false, book_exists = false;
+        cout << "Enter the name of the book\n";
+        cin >> book_name;
+        for (int i = 0; i < books_count; i++)
+        {
+            if (books[i].name == book_name && books[i].quantity > 0)
+            {
+                cout << "The books is available\nWhom do you to want to give the book to?\n";
+                cin >> user_name;
+                for (int j = 0; j < users_count; j++)
+                {
+                    if (users[j].name == user_name)
+                    {
+                        books[i].quantity--;
+                        books[i].users[books[i].users_count] = users[j];
+                        books[i].users_count++;
+                        cout << "Please give the book to " + users[j].name;
+                        return;
+                    }
+                }
+                if (!user_exists)
+                {
+                    cout << "The user does not exist. Please add the user and try again";
+                    return;
+                }
+                book_exists = 1;
+            }
+        }
+        if (!book_exists)
+        {
+            cout << "Sorry! The book is unavailable\n";
+        }
+    }
+    void collect_book_from_user()
+    {
+        string user_name, book_name;
+        cout << "Enter the name of the book\n";
+        cin >> book_name;
+        cout << "who is returning the book?\n";
+        cin >> user_name;
+        for (int i = 0; i < books_count; i++)
+        {
+            if (books[i].name == book_name)
+            {
+                for (int j = 0; i < books[i].users_count; j++)
+                {
+                    if (books[i].users[j].name == user_name)
+                    {
+                        books[i].users[j].is_active = 0;
+                        books[i].quantity++;
+                        cout << "Book successfully recieved!";
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    void find_users_of_book()
+    {
+        string book_name;
+        cout << "Enter the name of the book\n";
+        cin >> book_name;
+        for (int i = 0; i < books_count; i++)
+        {
+            if (books[i].name == book_name)
+            {
+                for (int j = 0; j < books[i].users_count; j++)
+                {
+                    if (books[i].users[j].is_active)
+                    {
+                        cout << books[i].users[j].name << " ";
+                    }
+                }
+            }
+        }
+    }
+    int menu()
+    {
+        int choice;
+        cout << "\n\n**********************************\n"
+             << "Welcome to the Library Admin tool!!!\nPlease enter your choice:\n"
+             << "1. Add a book" << endl
+             << "2. Search a book by its prefix" << endl
+             << "3. Search a book by its substring" << endl
+             << "4. Print all the books" << endl
+             << "5. Add a User" << endl
+             << "6. Give book to the User" << endl
+             << "7. Collect book from the User" << endl
+             << "8. Print all the Users" << endl
+             << "9. Find users who borrowed a book" << endl
+             << "10. Exit the system" << endl;
+        cin >> choice;
+        return choice;
+    }
+
     void start()
     {
         while (true)
@@ -199,22 +294,24 @@ struct library_system
             case 4:
                 print_books();
                 break;
-
-            // case 6:
-            //     add_user();
-            //     break;
-            // case 7:
-            //     give_book_to_user();
-            //     break;
-            // case 8:
-            //     take_book_from_user();
-            //     break;
-            // case 9:
-            //     print_users();
-            //     break;
-            // case 10:
-            //     cout << "Thanks for using our system\nPlease come back again!\n";
-            //     break;
+            case 5:
+                add_user();
+                break;
+            case 6:
+                give_book_to_user();
+                break;
+            case 7:
+                collect_book_from_user();
+                break;
+            case 8:
+                print_users();
+                break;
+            case 9:
+                find_users_of_book();
+                break;
+            case 10:
+                cout << "Thanks for using our system\nPlease come back again!\n";
+                break;
             default:
                 cin.clear();
                 cin.ignore();
